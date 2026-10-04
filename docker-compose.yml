@@ -1,0 +1,356 @@
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: roadrescue-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-roadrescue}
+      POSTGRES_USER: ${POSTGRES_USER:-roadrescue_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roadrescue_pass}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-roadrescue_user} -d ${POSTGRES_DB:-roadrescue}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - roadrescue-net
+
+  # pgAdmin (Web GUI for PostgreSQL)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: roadrescue-pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@roadrescue.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - roadrescue-net
+
+  # In-Memory Cache and GEO Engine
+  redis:
+    image: redis:7-alpine
+    container_name: roadrescue-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - roadrescue-net
+
+  # Kafka (KRaft mode)
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: roadrescue-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    healthcheck:
+      test: ["CMD", "kafka-cluster", "cluster-id", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - roadrescue-net
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./server
+      dockerfile: api-gateway/Dockerfile
+    container_name: roadrescue-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - CUSTOMER_SERVICE_URL=http://customer-service:8082
+      - PROVIDER_SERVICE_URL=http://provider-service:8083
+      - BOOKING_SERVICE_URL=http://booking-service:8084
+      - MATCHING_SERVICE_URL=http://matching-service:8085
+      - TRACKING_SERVICE_URL=http://tracking-service:8086
+      - TRACKING_SERVICE_WS_URL=ws://tracking-service:8086
+      - PAYMENT_SERVICE_URL=http://payment-service:8087
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8088
+      - RATING_SERVICE_URL=http://rating-service:8089
+    depends_on:
+      - auth-service
+      - customer-service
+      - provider-service
+      - booking-service
+      - matching-service
+      - tracking-service
+      - payment-service
+      - notification-service
+      - rating-service
+    networks:
+      - roadrescue-net
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./server
+      dockerfile: auth-service/Dockerfile
+    container_name: roadrescue-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-superSecretKeyForRoadRescueProjectWhichMustBeAtLeast256BitsLongAndSecure!}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - roadrescue-net
+
+  # Customer Service
+  customer-service:
+    build:
+      context: ./server
+      dockerfile: customer-service/Dockerfile
+    container_name: roadrescue-customer
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - roadrescue-net
+
+  # Provider Service
+  provider-service:
+    build:
+      context: ./server
+      dockerfile: provider-service/Dockerfile
+    container_name: roadrescue-provider
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Booking Service
+  booking-service:
+    build:
+      context: ./server
+      dockerfile: booking-service/Dockerfile
+    container_name: roadrescue-booking
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Matching Service
+  matching-service:
+    build:
+      context: ./server
+      dockerfile: matching-service/Dockerfile
+    container_name: roadrescue-matching
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Tracking Service
+  tracking-service:
+    build:
+      context: ./server
+      dockerfile: tracking-service/Dockerfile
+    container_name: roadrescue-tracking
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./server
+      dockerfile: payment-service/Dockerfile
+    container_name: roadrescue-payment
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./server
+      dockerfile: notification-service/Dockerfile
+    container_name: roadrescue-notification
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - roadrescue-net
+
+  # Rating Service
+  rating-service:
+    build:
+      context: ./server
+      dockerfile: rating-service/Dockerfile
+    container_name: roadrescue-rating
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=roadrescue
+      - DB_USER=roadrescue_user
+      - DB_PASSWORD=roadrescue_pass
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - roadrescue-net
+
+  # Frontend Web Client
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: roadrescue-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - roadrescue-net
+
+networks:
+  roadrescue-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:

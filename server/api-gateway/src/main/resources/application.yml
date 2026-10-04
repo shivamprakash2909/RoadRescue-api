@@ -1,0 +1,75 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+
+        - id: customer-service
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/customers/**,/api/v1/vehicles/**
+
+        - id: provider-service
+          uri: ${PROVIDER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/providers/**
+
+        - id: booking-service
+          uri: ${BOOKING_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/bookings/**,/api/v1/provider/bookings/**
+
+        - id: matching-service
+          uri: ${MATCHING_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/matching/**,/api/v1/providers/nearby/**
+
+        - id: tracking-service-ws
+          uri: ${TRACKING_SERVICE_WS_URL:ws://localhost:8086}
+          predicates:
+            - Path=/ws/**
+
+        - id: tracking-service
+          uri: ${TRACKING_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/tracking/**
+
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/invoices/**,/api/v1/payments/**
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8088}
+          predicates:
+            - Path=/api/v1/notifications/**
+
+        - id: rating-service
+          uri: ${RATING_SERVICE_URL:http://localhost:8089}
+          predicates:
+            - Path=/api/v1/ratings/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO
+    com.shivam.roadrescue: DEBUG

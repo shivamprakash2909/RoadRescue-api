@@ -1,0 +1,50 @@
+# Compiled class files & build directories
+target/
+**/target/
+*.class
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Frontend Client Repository (tracked independently)
+client/
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.vite/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Environment & Secrets
+.env
+!.env.example
+*.local
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
+redis_data/

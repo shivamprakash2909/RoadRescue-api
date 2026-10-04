@@ -24,26 +24,26 @@ The platform automates: location-aware provider matching, booking lifecycle mana
 
 ## TECHNOLOGY STACK (mandatory — do not substitute)
 
-| Layer | Technology |
-|---|---|
-| Backend | Java 17+, Spring Boot 3.x, separate microservices |
-| Build | Maven multi-module (parent POM + child service modules) |
-| API | REST, JSON, OpenAPI 3.0 / SpringDoc |
-| Auth | Spring Security 6 + JWT (access + refresh tokens, BCrypt) |
-| Database | PostgreSQL 15+ (one instance, separate schema per service) |
-| Migrations | Flyway |
-| Cache | Redis (availability, location GEO, rate limiting, token blacklist) |
-| Events | Apache Kafka (async domain events, JSON serialization) |
-| Real-time | WebSocket (STOMP over SockJS via Spring Messaging) |
-| Frontend | React 18+, TypeScript 5+, Vite, React Router 6 |
-| Styling | Tailwind CSS 3 |
-| Maps | Mapbox GL JS (adapter pattern — swappable) |
-| HTTP Client (FE) | Axios with interceptors |
-| State (FE) | Zustand (lightweight) or React Context for auth |
-| Containerization | Docker multi-stage builds, Docker Compose |
-| Testing | JUnit 5, Mockito, Spring Boot Test, Testcontainers, React Testing Library |
-| CI/CD | GitHub Actions |
-| Code Quality | Lombok (reduce boilerplate), MapStruct (DTO mapping) |
+| Layer            | Technology                                                                |
+| ---------------- | ------------------------------------------------------------------------- |
+| Backend          | Java 17+, Spring Boot 3.x, separate microservices                         |
+| Build            | Maven multi-module (parent POM + child service modules)                   |
+| API              | REST, JSON, OpenAPI 3.0 / SpringDoc                                       |
+| Auth             | Spring Security 6 + JWT (access + refresh tokens, BCrypt)                 |
+| Database         | PostgreSQL 15+ (one instance, separate schema per service)                |
+| Migrations       | Flyway                                                                    |
+| Cache            | Redis (availability, location GEO, rate limiting, token blacklist)        |
+| Events           | Apache Kafka (async domain events, JSON serialization)                    |
+| Real-time        | WebSocket (STOMP over SockJS via Spring Messaging)                        |
+| Frontend         | React 18+, TypeScript 5+, Vite, React Router 6                            |
+| Styling          | Tailwind CSS 3                                                            |
+| Maps             | Mapbox GL JS (adapter pattern — swappable)                                |
+| HTTP Client (FE) | Axios with interceptors                                                   |
+| State (FE)       | Zustand (lightweight) or React Context for auth                           |
+| Containerization | Docker multi-stage builds, Docker Compose                                 |
+| Testing          | JUnit 5, Mockito, Spring Boot Test, Testcontainers, React Testing Library |
+| CI/CD            | GitHub Actions                                                            |
+| Code Quality     | Lombok (reduce boilerplate), MapStruct (DTO mapping)                      |
 
 ---
 
@@ -58,8 +58,10 @@ roadrescue/
 ├── Makefile                           # Shortcuts: make up, make down, make logs, make build
 ├── README.md
 │
-├── backend/
+├── server/
 │   ├── pom.xml                        # Parent POM (dependency management, plugin management)
+│   ├── mvnw & mvnw.cmd                # Maven wrapper scripts
+│   ├── .mvn/
 │   │
 │   ├── shared-lib/                    # Shared module — all services depend on this
 │   │   ├── pom.xml
@@ -171,7 +173,7 @@ roadrescue/
 │   │           └── api/
 │   │               └── AuthControllerTest.java
 │   │
-│   ├── customer-vehicle-service/
+│   ├── customer-service/
 │   │   ├── pom.xml
 │   │   ├── Dockerfile
 │   │   └── src/
@@ -407,13 +409,13 @@ roadrescue/
 │   │       │       └── application.yml
 │   │       └── test/java/com/roadrescue/tracking/
 │   │
-│   ├── billing-service/
+│   ├── payment-service/
 │   │   ├── pom.xml
 │   │   ├── Dockerfile
 │   │   └── src/
 │   │       ├── main/
-│   │       │   ├── java/com/roadrescue/billing/
-│   │       │   │   ├── BillingServiceApplication.java
+│   │       │   ├── java/com/roadrescue/payment/
+│   │       │   │   ├── PaymentServiceApplication.java
 │   │       │   │   ├── config/
 │   │       │   │   │   ├── SecurityConfig.java
 │   │       │   │   │   ├── KafkaConfig.java
@@ -457,55 +459,91 @@ roadrescue/
 │   │       │   │       ├── consumer/
 │   │       │   │       │   └── ServiceCompletedConsumer.java
 │   │       │   │       └── producer/
-│   │       │   │           └── BillingEventProducer.java
+│   │       │   │           └── PaymentEventProducer.java
 │   │       │   └── resources/
 │   │       │       ├── application.yml
 │   │       │       └── db/migration/
-│   │       │           └── V1__create_billing_tables.sql
-│   │       └── test/java/com/roadrescue/billing/
+│   │       │           └── V1__create_payment_tables.sql
+│   │       └── test/java/com/roadrescue/payment/
 │   │           ├── unit/
 │   │           │   ├── InvoiceServiceTest.java
 │   │           │   └── PaymentServiceTest.java
 │   │           └── integration/
 │   │
-│   └── notification-service/
+│   ├── notification-service/
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── java/com/roadrescue/notification/
+│   │       │   │   ├── NotificationServiceApplication.java
+│   │       │   │   ├── config/
+│   │       │   │   │   ├── SecurityConfig.java
+│   │       │   │   │   ├── KafkaConsumerConfig.java
+│   │       │   │   │   └── OpenApiConfig.java
+│   │       │   │   ├── controller/
+│   │       │   │   │   └── NotificationController.java
+│   │       │   │   ├── dto/
+│   │       │   │   │   └── response/
+│   │       │   │   │       └── NotificationResponse.java
+│   │       │   │   ├── entity/
+│   │       │   │   │   └── Notification.java
+│   │       │   │   ├── mapper/
+│   │       │   │   │   └── NotificationMapper.java
+│   │       │   │   ├── repository/
+│   │       │   │   │   └── NotificationRepository.java
+│   │       │   │   ├── service/
+│   │       │   │   │   ├── NotificationService.java
+│   │       │   │   │   ├── NotificationServiceImpl.java
+│   │       │   │   │   ├── NotificationChannel.java          # Interface
+│   │       │   │   │   ├── InAppNotificationChannel.java     # Saves to DB
+│   │       │   │   │   └── EmailNotificationChannel.java     # Mock SMTP / Mailhog
+│   │       │   │   └── event/
+│   │       │   │       └── consumer/
+│   │       │   │           └── DomainEventConsumer.java  # Listens to all booking/payment events
+│   │       │   └── resources/
+│   │       │       ├── application.yml
+│   │       │       └── db/migration/
+│   │       │           └── V1__create_notification_table.sql
+│   │       └── test/java/com/roadrescue/notification/
+│   │
+│   └── rating-service/
 │       ├── pom.xml
 │       ├── Dockerfile
 │       └── src/
 │           ├── main/
-│           │   ├── java/com/roadrescue/notification/
-│           │   │   ├── NotificationServiceApplication.java
+│           │   ├── java/com/roadrescue/rating/
+│           │   │   ├── RatingServiceApplication.java
 │           │   │   ├── config/
 │           │   │   │   ├── SecurityConfig.java
-│           │   │   │   ├── KafkaConsumerConfig.java
 │           │   │   │   └── OpenApiConfig.java
 │           │   │   ├── controller/
-│           │   │   │   └── NotificationController.java
+│           │   │   │   └── RatingController.java
 │           │   │   ├── dto/
+│           │   │   │   ├── request/
+│           │   │   │   │   └── CreateRatingRequest.java
 │           │   │   │   └── response/
-│           │   │   │       └── NotificationResponse.java
+│           │   │   │       ├── RatingResponse.java
+│           │   │   │       └── ProviderRatingSummaryResponse.java
 │           │   │   ├── entity/
-│           │   │   │   └── Notification.java
+│           │   │   │   └── Rating.java
 │           │   │   ├── mapper/
-│           │   │   │   └── NotificationMapper.java
+│           │   │   │   └── RatingMapper.java
 │           │   │   ├── repository/
-│           │   │   │   └── NotificationRepository.java
+│           │   │   │   └── RatingRepository.java
 │           │   │   ├── service/
-│           │   │   │   ├── NotificationService.java
-│           │   │   │   ├── NotificationServiceImpl.java
-│           │   │   │   ├── NotificationChannel.java          # Interface
-│           │   │   │   ├── InAppNotificationChannel.java     # Saves to DB
-│           │   │   │   └── EmailNotificationChannel.java     # Mock SMTP / Mailhog
+│           │   │   │   ├── RatingService.java
+│           │   │   │   └── RatingServiceImpl.java
 │           │   │   └── event/
 │           │   │       └── consumer/
-│           │   │           └── DomainEventConsumer.java  # Listens to all booking/payment events
+│           │   │           └── ServiceCompletedConsumer.java
 │           │   └── resources/
 │           │       ├── application.yml
 │           │       └── db/migration/
-│           │           └── V1__create_notification_table.sql
-│           └── test/java/com/roadrescue/notification/
+│           │           └── V1__create_ratings_table.sql
+│           └── test/java/com/roadrescue/rating/
 │
-├── frontend/
+├── client/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts
@@ -617,7 +655,7 @@ roadrescue/
 │
 ├── infra/
 │   ├── postgres/
-│   │   └── init.sql                                # Create schemas: auth, customer, provider, booking, billing, notification
+│   │   └── init.sql                                # Create schemas: auth_schema, customer_schema, provider_schema, booking_schema, payment_schema, notification_schema, rating_schema
 │   ├── kafka/
 │   │   └── create-topics.sh                        # Bootstrap Kafka topics
 │   └── nginx/
@@ -634,6 +672,7 @@ roadrescue/
 ## CODE PRACTICES (enforce in all generated code)
 
 ### Backend Practices
+
 1. **Clean layering:** `Controller → Service (interface + impl) → Repository`. Zero business logic in controllers — controllers only handle HTTP concerns (validation, status codes, response mapping).
 2. **DTOs everywhere:** Never expose JPA `@Entity` classes in API responses. Use `request/` and `response/` DTO subpackages. Map with MapStruct.
 3. **Interface-first services:** Every service class has an interface (`BookingService.java`) and an implementation (`BookingServiceImpl.java`). Enables mocking and future swapping.
@@ -650,6 +689,7 @@ roadrescue/
 14. **Audit fields:** All entities extend a `@MappedSuperclass BaseEntity` with `id` (UUID), `createdAt`, `updatedAt` using `@PrePersist` / `@PreUpdate`.
 
 ### Frontend Practices
+
 1. **Strict TypeScript:** `strict: true` in tsconfig. No `any` types.
 2. **API layer separation:** All HTTP calls go through `src/api/` files. Pages/components never call Axios directly.
 3. **Custom hooks:** Encapsulate logic in hooks (`useAuth`, `useWebSocket`, `useBookingStatus`). Pages are thin — they compose hooks and components.
@@ -662,12 +702,12 @@ roadrescue/
 
 ## ROLES & AUTHORIZATION
 
-| Role | Access |
-|---|---|
-| CUSTOMER | Own profile, own vehicles, create bookings, view own bookings/invoices, pay, rate |
-| MECHANIC | Own provider profile, receive/accept/reject requests, advance job status, create invoices |
-| TOW_PROVIDER | Same as MECHANIC but for towing jobs |
-| ADMIN | All data (read), verify providers, manage users, view all bookings/payments, audit log |
+| Role         | Access                                                                                    |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| CUSTOMER     | Own profile, own vehicles, create bookings, view own bookings/invoices, pay, rate         |
+| MECHANIC     | Own provider profile, receive/accept/reject requests, advance job status, create invoices |
+| TOW_PROVIDER | Same as MECHANIC but for towing jobs                                                      |
+| ADMIN        | All data (read), verify providers, manage users, view all bookings/payments, audit log    |
 
 ---
 
@@ -682,6 +722,7 @@ PAYMENT_PENDING → COMPLETED
 **Cancellation** allowed from: REQUESTED, SEARCHING, PROVIDER_ASSIGNED, PROVIDER_ACCEPTED, PROVIDER_EN_ROUTE → transitions to CANCELLED.
 
 **Rules:**
+
 - Invalid transitions MUST be rejected with HTTP 400 + descriptive error.
 - Every transition MUST be recorded in `booking_status_history` with timestamp and `changed_by`.
 - Every transition MUST publish a Kafka event with unique event ID.
@@ -736,6 +777,7 @@ AuditLog (id, admin_id, action, entity_type, entity_id, details, timestamp)
 ## ALL API ENDPOINTS
 
 ### Auth Service
+
 ```
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
@@ -745,6 +787,7 @@ GET    /api/v1/auth/me
 ```
 
 ### Customer & Vehicle Service
+
 ```
 GET    /api/v1/customers/profile
 PUT    /api/v1/customers/profile
@@ -756,6 +799,7 @@ DELETE /api/v1/vehicles/{id}
 ```
 
 ### Provider Service
+
 ```
 GET    /api/v1/providers/profile
 PUT    /api/v1/providers/profile
@@ -766,6 +810,7 @@ GET    /api/v1/providers/{id}/public
 ```
 
 ### Booking Service
+
 ```
 POST   /api/v1/bookings
 GET    /api/v1/bookings/{id}
@@ -777,11 +822,13 @@ POST   /api/v1/provider/bookings/{id}/status
 ```
 
 ### Matching Service
+
 ```
 GET    /api/v1/providers/nearby?lat=X&lng=Y&radius=Z&serviceType=T
 ```
 
 ### Tracking Service
+
 ```
 POST   /api/v1/tracking/location
 GET    /api/v1/bookings/{id}/status
@@ -790,6 +837,7 @@ WS     /ws/tracking → /topic/booking/{bookingId}/status, /topic/booking/{booki
 ```
 
 ### Billing Service
+
 ```
 POST   /api/v1/invoices
 POST   /api/v1/invoices/{id}/items
@@ -801,18 +849,21 @@ GET    /api/v1/payments/{id}
 ```
 
 ### Ratings (via Booking Service or standalone)
+
 ```
 POST   /api/v1/bookings/{id}/rating
 GET    /api/v1/providers/{id}/ratings
 ```
 
 ### Notification Service
+
 ```
 GET    /api/v1/notifications
 POST   /api/v1/notifications/{id}/read
 ```
 
 ### Admin (via API Gateway or Admin Service)
+
 ```
 GET    /api/v1/admin/customers
 GET    /api/v1/admin/providers
@@ -842,6 +893,7 @@ When a booking enters SEARCHING:
 ## PAYMENT FLOW
 
 Adapter pattern: `PaymentGateway` interface → `MockPaymentGateway`.
+
 - Mock: auto-returns SUCCESS after 2s simulated delay.
 - Callback endpoint: idempotent (deduplicate by `gateway_reference`).
 - SUCCESS → booking → COMPLETED. FAILED → stays PAYMENT_PENDING.
@@ -862,20 +914,22 @@ Adapter pattern: `PaymentGateway` interface → `MockPaymentGateway`.
 
 ```yaml
 services:
-  postgresql:       # Port 5432
+  postgresql:       # Port 5433 (host) -> 5432 (container)
+  pgadmin:          # Port 5050 (Web GUI)
   redis:            # Port 6379
   kafka:            # Port 9092
   zookeeper:        # Port 2181
   api-gateway:      # Port 8080
   auth-service:     # Port 8081
-  customer-vehicle-service: # Port 8082
+  customer-service: # Port 8082
   provider-service: # Port 8083
   booking-service:  # Port 8084
   matching-service: # Port 8085
   tracking-service: # Port 8086
-  billing-service:  # Port 8087
+  payment-service:  # Port 8087
   notification-service: # Port 8088
-  frontend:         # Port 3000
+  rating-service:   # Port 8089
+  client:           # Port 3000
 ```
 
 ---
@@ -884,18 +938,18 @@ services:
 
 I will ask you to execute these one at a time. When I say **"Execute Phase N"**, build everything listed for that phase with complete, production-quality code.
 
-| Phase | Name | Key Output |
-|---|---|---|
-| 1 | Scaffolding & Infrastructure | Parent POM, all service modules, Docker Compose, React skeleton, health checks |
-| 2 | Authentication & Identity | Register, login, JWT, RBAC, frontend auth flow, Flyway migration |
-| 3 | Customer Profile & Vehicles | Profile CRUD, vehicle CRUD, ownership enforcement, frontend pages |
-| 4 | Provider Management | Profiles, capabilities, availability (Redis), location (Redis GEO), frontend |
-| 5 | Booking Engine & State Machine | Full state machine, Kafka events, concurrency control, booking UI |
-| 6 | Provider Matching | Geospatial search, ranking, auto-assignment, reassignment on reject |
-| 7 | Real-Time Tracking (WebSocket) | STOMP WebSocket, live status + location push, reconnect resync |
-| 8 | Billing & Payment | Invoices, line items, mock gateway, payment state machine |
-| 9 | Ratings, Admin & Notifications | Star ratings, admin CRUD + audit log, event-driven notifications |
-| 10 | Testing, CI/CD & Docker | Comprehensive tests, GitHub Actions, multi-stage Dockerfiles, OpenAPI docs |
+| Phase | Name                           | Key Output                                                                     |
+| ----- | ------------------------------ | ------------------------------------------------------------------------------ |
+| 1     | Scaffolding & Infrastructure   | Parent POM, all service modules, Docker Compose, React skeleton, health checks |
+| 2     | Authentication & Identity      | Register, login, JWT, RBAC, frontend auth flow, Flyway migration               |
+| 3     | Customer Profile & Vehicles    | Profile CRUD, vehicle CRUD, ownership enforcement, frontend pages              |
+| 4     | Provider Management            | Profiles, capabilities, availability (Redis), location (Redis GEO), frontend   |
+| 5     | Booking Engine & State Machine | Full state machine, Kafka events, concurrency control, booking UI              |
+| 6     | Provider Matching              | Geospatial search, ranking, auto-assignment, reassignment on reject            |
+| 7     | Real-Time Tracking (WebSocket) | STOMP WebSocket, live status + location push, reconnect resync                 |
+| 8     | Billing & Payment              | Invoices, line items, mock gateway, payment state machine                      |
+| 9     | Ratings, Admin & Notifications | Star ratings, admin CRUD + audit log, event-driven notifications               |
+| 10    | Testing, CI/CD & Docker        | Comprehensive tests, GitHub Actions, multi-stage Dockerfiles, OpenAPI docs     |
 
 ---
 
