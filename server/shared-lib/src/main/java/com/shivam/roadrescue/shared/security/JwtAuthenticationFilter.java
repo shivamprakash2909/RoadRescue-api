@@ -15,15 +15,22 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtTokenProvider tokenProvider;
+    private final Predicate<String> blacklistChecker;
 
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
+        this(tokenProvider, token -> false);
+    }
+
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, Predicate<String> blacklistChecker) {
         this.tokenProvider = tokenProvider;
+        this.blacklistChecker = blacklistChecker != null ? blacklistChecker : token -> false;
     }
 
     @Override
@@ -34,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt) && !blacklistChecker.test(jwt)) {
                 UUID userId = tokenProvider.getUserIdFromToken(jwt);
                 String email = tokenProvider.getEmailFromToken(jwt);
                 Role role = tokenProvider.getRoleFromToken(jwt);
