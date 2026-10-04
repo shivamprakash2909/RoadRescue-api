@@ -33,10 +33,14 @@
             <groupId>com.shivam.roadrescue</groupId>
             <artifactId>shared-lib</artifactId>
             <exclusions>
-                <!-- Gateway is WebFlux-based, exclude webmvc from shared-lib -->
+                <!-- Gateway is WebFlux-based, exclude webmvc and security from shared-lib -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-security</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

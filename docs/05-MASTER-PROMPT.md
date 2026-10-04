@@ -914,22 +914,22 @@ Adapter pattern: `PaymentGateway` interface → `MockPaymentGateway`.
 
 ```yaml
 services:
-  postgresql:       # Port 5433 (host) -> 5432 (container)
-  pgadmin:          # Port 5050 (Web GUI)
-  redis:            # Port 6379
-  kafka:            # Port 9092
-  zookeeper:        # Port 2181
-  api-gateway:      # Port 8080
-  auth-service:     # Port 8081
+  postgresql: # Port 5433 (host) -> 5432 (container)
+  pgadmin: # Port 5050 (Web GUI)
+  redis: # Port 6379
+  kafka: # Port 9092
+  zookeeper: # Port 2181
+  api-gateway: # Port 8080
+  auth-service: # Port 8081
   customer-service: # Port 8082
   provider-service: # Port 8083
-  booking-service:  # Port 8084
+  booking-service: # Port 8084
   matching-service: # Port 8085
   tracking-service: # Port 8086
-  payment-service:  # Port 8087
+  payment-service: # Port 8087
   notification-service: # Port 8088
-  rating-service:   # Port 8089
-  client:           # Port 3000
+  rating-service: # Port 8089
+  client: # Port 3000
 ```
 
 ---

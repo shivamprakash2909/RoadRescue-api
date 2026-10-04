@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eureka-server
+  output:
+    ansi:
+      enabled: always
 
 eureka:
   instance:
@@ -28,7 +31,7 @@ management:
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level) %clr(%logger{36}){cyan} - %msg%n"
   level:
     root: INFO
     com.netflix.eureka: INFO

@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: config-server
+  output:
+    ansi:
+      enabled: always
   profiles:
     active: native
   cloud:
@@ -37,7 +40,7 @@ management:
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr([%X{correlationId}]){cyan} %clr(%-5level) %clr(%logger{36}){cyan} - %msg%n"
   level:
     root: INFO
     org.springframework.cloud.config: INFO
