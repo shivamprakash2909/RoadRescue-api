@@ -1,57 +1,5 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: auth-service
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:roadrescue}?currentSchema=auth_schema
-    username: ${DB_USER:roadrescue_user}
-    password: ${DB_PASSWORD:roadrescue_pass}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: auth_schema
-  flyway:
-    enabled: true
-    schemas: auth_schema
-    default-schema: auth_schema
-    locations: classpath:db/migration
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-
-app:
-  jwt:
-    secret: ${JWT_SECRET:defaultSecretKeyForRoadRescueProjectWhichMustBeAtLeast256BitsLong!}
-    access-expiration-ms: 900000
-    refresh-expiration-ms: 604800000
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
-
-logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
-  level:
-    root: INFO
-    com.shivam.roadrescue: DEBUG
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"

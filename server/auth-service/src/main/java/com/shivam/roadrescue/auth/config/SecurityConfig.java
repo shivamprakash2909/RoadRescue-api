@@ -56,7 +56,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
@@ -80,7 +81,8 @@ public class SecurityConfig {
                     .timestamp(Instant.now())
                     .status(HttpStatus.UNAUTHORIZED.value())
                     .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                    .message(authException.getMessage() != null ? authException.getMessage() : "Full authentication is required to access this resource")
+                    .message(authException.getMessage() != null ? authException.getMessage()
+                            : "Full authentication is required to access this resource")
                     .path(request.getRequestURI())
                     .correlationId(MDC.get("correlationId"))
                     .build();
@@ -97,6 +99,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
@@ -105,10 +108,9 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/actuator/**",
-                                "/health"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/health")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(correlationIdFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -118,11 +120,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8080"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:8080",
+                "http://127.0.0.1:8080",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Correlation-Id"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

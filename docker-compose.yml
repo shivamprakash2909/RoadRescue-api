@@ -87,6 +87,47 @@ services:
     networks:
       - roadrescue-net
 
+  # Eureka Server (Service Discovery)
+  eureka-server:
+    build:
+      context: ./server
+      dockerfile: eureka-server/Dockerfile
+    container_name: roadrescue-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_HOSTNAME=eureka-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - roadrescue-net
+
+  # Config Server (Centralized File-Based Configuration)
+  config-server:
+    build:
+      context: ./server
+      dockerfile: config-server/Dockerfile
+    container_name: roadrescue-config
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_ENABLED=true
+    depends_on:
+      - eureka-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - roadrescue-net
+
   # API Gateway
   api-gateway:
     build:
@@ -97,17 +138,21 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - CUSTOMER_SERVICE_URL=http://customer-service:8082
-      - PROVIDER_SERVICE_URL=http://provider-service:8083
-      - BOOKING_SERVICE_URL=http://booking-service:8084
-      - MATCHING_SERVICE_URL=http://matching-service:8085
-      - TRACKING_SERVICE_URL=http://tracking-service:8086
-      - TRACKING_SERVICE_WS_URL=ws://tracking-service:8086
-      - PAYMENT_SERVICE_URL=http://payment-service:8087
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8088
-      - RATING_SERVICE_URL=http://rating-service:8089
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - AUTH_SERVICE_URL=lb://auth-service
+      - CUSTOMER_SERVICE_URL=lb://customer-service
+      - PROVIDER_SERVICE_URL=lb://provider-service
+      - BOOKING_SERVICE_URL=lb://booking-service
+      - MATCHING_SERVICE_URL=lb://matching-service
+      - TRACKING_SERVICE_URL=lb://tracking-service
+      - TRACKING_SERVICE_WS_URL=lb:ws://tracking-service
+      - PAYMENT_SERVICE_URL=lb://payment-service
+      - NOTIFICATION_SERVICE_URL=lb://notification-service
+      - RATING_SERVICE_URL=lb://rating-service
     depends_on:
+      - eureka-server
+      - config-server
       - auth-service
       - customer-service
       - provider-service
@@ -130,6 +175,8 @@ services:
     ports:
       - "8081:8081"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -143,6 +190,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
     networks:
       - roadrescue-net
 
@@ -156,6 +207,8 @@ services:
     ports:
       - "8082:8082"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -164,6 +217,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
     networks:
       - roadrescue-net
 
@@ -177,6 +234,8 @@ services:
     ports:
       - "8083:8083"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -191,6 +250,10 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -205,6 +268,8 @@ services:
     ports:
       - "8084:8084"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -215,6 +280,10 @@ services:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -229,6 +298,8 @@ services:
     ports:
       - "8085:8085"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -236,6 +307,10 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -250,6 +325,8 @@ services:
     ports:
       - "8086:8086"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -257,6 +334,10 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -271,6 +352,8 @@ services:
     ports:
       - "8087:8087"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -281,6 +364,10 @@ services:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -295,6 +382,8 @@ services:
     ports:
       - "8088:8088"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -305,6 +394,10 @@ services:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
     networks:
       - roadrescue-net
@@ -319,6 +412,8 @@ services:
     ports:
       - "8089:8089"
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=roadrescue
@@ -327,6 +422,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
     networks:
       - roadrescue-net
 

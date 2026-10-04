@@ -1,0 +1,43 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations:
+            - classpath:/shared-config
+            - file:./shared-config
+            - file:../shared-config
+            - file:./server/shared-config
+            - file:/app/shared-config
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:true}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,env
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    org.springframework.cloud.config: INFO

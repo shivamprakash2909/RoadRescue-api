@@ -1,53 +1,5 @@
-server:
-  port: 8087
-
 spring:
   application:
     name: payment-service
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:roadrescue}?currentSchema=payment_schema
-    username: ${DB_USER:roadrescue_user}
-    password: ${DB_PASSWORD:roadrescue_pass}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: payment_schema
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: payment-service-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "com.shivam.roadrescue.shared.*"
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
-
-logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
-  level:
-    root: INFO
-    com.shivam.roadrescue: DEBUG
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"

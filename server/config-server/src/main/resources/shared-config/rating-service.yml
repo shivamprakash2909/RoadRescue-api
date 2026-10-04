@@ -1,0 +1,30 @@
+server:
+  port: 8089
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:roadrescue}?currentSchema=rating_schema
+    username: ${DB_USER:roadrescue_user}
+    password: ${DB_PASSWORD:roadrescue_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: rating_schema
+  flyway:
+    enabled: true
+    schemas: rating_schema
+    default-schema: rating_schema
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
