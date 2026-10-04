@@ -3,3 +3,10 @@ spring:
     name: customer-service
   config:
     import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:superSecretKeyForRoadRescueProjectWhichMustBeAtLeast256BitsLongAndSecure!}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
